@@ -1,12 +1,12 @@
 # Amazon Scraper (Node.js): search results and product data as JSON
 
-Scrape Amazon.com search results and product pages into clean JSON: title, price, currency, list price, star rating, review count, "bought in past month", sponsored flag, seller, availability, feature bullets, Best Sellers Rank, images and the full product details table. No headless browser, no proxy pool to rent: each page is requested from your own machine through a public [Unbrowse](https://unbrowse.ai) tool, and parsed locally.
+Scrape Amazon.com search results and product pages into clean JSON: title, price, currency, list price, star rating, review count, "bought in past month", sponsored flag, seller, availability, feature bullets, Best Sellers Rank, images and the full product details table. No headless browser, no proxy pool to rent: each page is requested from your own machine through a public [Unbrowse](https://unbrowse.ai) tool, and parsed locally. Without an Unbrowse key, or when that tool is unavailable, the scraper sends the same request straight to the site and parses it the same way.
 
 ## Quick start
 
 ```bash
 git clone https://github.com/unbrowse-ai/amazon-scraper && cd amazon-scraper && npm install
-export UNBROWSE_API_KEY=ub_live_...        # free key: https://unbrowse.ai
+export UNBROWSE_API_KEY=ub_live_...        # optional; free key: https://unbrowse.ai
 
 node index.mjs "wireless earbuds" --max 40 > earbuds.json
 node index.mjs https://www.amazon.com/dp/B0D4Z9RPT8 > product.json
@@ -90,7 +90,7 @@ A product page (trimmed):
 
 ## FAQ
 
-**Why do I need an API key?** Pages are fetched through Unbrowse's public `amazon.com` tool, which tells your machine what to request. The key is free and the request itself leaves from your IP.
+**Do I need a key?** No. With a free [Unbrowse](https://unbrowse.ai) key, the scraper runs Unbrowse's public `amazon.com` tool first, which tells your machine which request to send. Without a key, or when a tool is unavailable, it sends the same request directly with a normal browser user agent (one `note:` line on stderr says so). Either way the request leaves from your IP, and your key is never sent to the site.
 
 **Prices came back in SGD / EUR.** Amazon picks a currency from your IP. The scraper pins USD with Amazon's own preference cookie; pass `--currency EUR` or `--currency auto` to change that. The `currency` field always says what you got.
 

@@ -10,7 +10,7 @@ description: Get Amazon.com search results or product details (price, rating, re
 - Not for other retailers, and not for amazon.co.uk / .de / .jp (the public tool covers amazon.com).
 
 ## Run
-Needs `UNBROWSE_API_KEY` (free at https://unbrowse.ai). From the repo root:
+Uses `UNBROWSE_API_KEY` when set (free at https://unbrowse.ai); without it, requests go straight to the site. From the repo root:
 
 ```bash
 node index.mjs "<search terms>" --max 40 > out.json          # search cards

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Amazon Scraper: search results and product pages from amazon.com as structured JSON.
-// Pages are read through the public Unbrowse tool public.amazon_com.read_page, sent from this machine.
+// Pages are read through the public Unbrowse tool public.amazon_com.read_page, sent from this machine;
+// without a key, or when the tool is unavailable, the same page is requested directly.
 import { fileURLToPath } from "node:url";
 import { cli, mapLimit, readPage } from "./lib/read-page.mjs";
 import { classifyUrl, isBlocked, parseProduct, parseSearch } from "./parse.mjs";
@@ -16,7 +17,11 @@ const withCurrency = (url, init) => {
   if (currency) headers.cookie = [headers.cookie, `i18n-prefs=${currency}`].filter(Boolean).join("; ");
   return fetch(url, { ...init, headers });
 };
-const get = (path) => readPage(CAPABILITY, { path }, { hosts: HOSTS, refused, fetch: withCurrency });
+// direct: the same page, requested straight from this machine when the Unbrowse tool cannot run. Amazon answers a
+// desktop Chrome user agent from a non-browser client with a 503 "Sorry! Something went wrong!" page, and a plain,
+// honest one with the normal page, so the direct request names itself.
+const DIRECT_UA = "Mozilla/5.0 (compatible; open-scrapers/0.1; +https://github.com/unbrowse-ai/open-scrapers)";
+const get = (path) => readPage(CAPABILITY, { path }, { hosts: HOSTS, refused, fetch: withCurrency, direct: { url: `https://www.amazon.com${path}`, headers: { "user-agent": DIRECT_UA } } });
 const pathOf = (url) => {
   const u = new URL(url);
   return u.pathname + u.search;
@@ -53,8 +58,14 @@ export async function scrapeSearch(queryOrUrl, { max = 48, details = false, conc
   const items = [];
   const seen = new Set();
   for (let pageNo = 1; path && items.length < max && pageNo <= 20; pageNo++) {
-    const page = await get(path);
-    const res = parseSearch(page.body);
+    let page = await get(path);
+    let res = parseSearch(page.body);
+    // Now and then Amazon serves a full-size results page with no result cards; one more try usually has them.
+    if (res && !res.items.length && pageNo === 1) {
+      await new Promise((r) => setTimeout(r, 2000));
+      page = await get(path);
+      res = parseSearch(page.body);
+    }
     if (!res) throw new Error("Amazon did not return a search page");
     log(`page ${pageNo}: ${res.items.length} results`);
     if (!res.items.length) break;
@@ -100,6 +111,6 @@ Usage: node index.mjs <search terms | amazon.com URL | ASIN>... [--max 48] [--de
   --details    also read every product page (one extra call per item)
   --currency C price in this currency (default USD; "auto" = whatever Amazon picks for your IP)
 
-Needs UNBROWSE_API_KEY (free at https://unbrowse.ai).`,
+Uses UNBROWSE_API_KEY when set (free at https://unbrowse.ai); without it, requests go straight to the site.`,
   );
 }
